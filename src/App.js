@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Form, Row, Col } from 'react-bootstrap';
+import './App.css';
 
 // Mock data
 const tableData = [
   {
-    name: 'John', screen_name: 'john_doe', followers_count: 100,
-    following_count: 50, location: 'New York', verified: true
+    Name: 'John', screen_name: 'john_doe', followers_count: 100,
+    following_count: 50, Location: 'New York', Verified: true
+  },
+  {
+    Name: 'Bhuvan', screen_name: 'Bhuvan_esh', followers_count: 800,
+    following_count: 90, Location: 'London', Verified: true
+  },
+  {
+    Name: 'Dsk', screen_name: 'Dsk_sk', followers_count: 600,
+    following_count: 20, Location: 'America', Verified: false
   }
 ];
 
@@ -19,10 +29,11 @@ const filterOperators = {
 };
 
 const DynamicTable = () => {
-  const [filters, setFilters] = useState([]);
 
+  const [filters, setFilters] = useState([{ conjunction: 'AND', column: '', operator: '', value: '' }]);
   const handleAddFilter = () => {
-    setFilters([...filters, { column: '', operator: '', value: '', conjunction: 'AND' }]);
+    setFilters([...filters, { conjunction: 'AND', column: '', operator: '', value: '' }]);
+
   };
 
   const handleRemoveFilter = (index) => {
@@ -31,22 +42,48 @@ const DynamicTable = () => {
     setFilters(updatedFilters);
   };
 
-  const handleFilterChange = (index, field, value) => {
+  const handleFilterChange = (index, field, value, e) => {
     const updatedFilters = [...filters];
     updatedFilters[index][field] = value;
     setFilters(updatedFilters);
+    console.log(e, "e")
   };
 
   const applyFilters = () => {
-
     console.log('Filter Query:', filters);
-
   };
+
+  const [filteredTableData, setFilteredTableData] = useState(tableData);
+
+  useEffect(() => {
+    const newFilteredData = tableData.filter((row) => {
+      return filters.every((filter) => {
+        if (!filter.column || !filter.operator || !filter.value) {
+          return true;
+        }
+
+        const cellValue = row[filter.column];
+        switch (filter.operator) {
+          case 'CONTAINS':
+            return cellValue.includes(filter.value);
+          case 'GTE':
+            return cellValue >= filter.value;
+          case 'LTE':
+            return cellValue <= filter.value;
+          case 'EQ':
+            return cellValue === (filter.value === 'true');
+          default:
+            return true;
+        }
+      });
+    });
+
+    setFilteredTableData(newFilteredData);
+  }, [filters]);
 
   return (
     <div>
-
-      <div>
+      <div className='table-aligns'>
         {filters.map((filter, index) => (
           <div key={index}>
             <select
@@ -61,12 +98,11 @@ const DynamicTable = () => {
               onChange={(e) => handleFilterChange(index, 'column', e.target.value)}
             >
               <option value="">Select Column</option>
-              <option value="name">Name</option>
-              <option value="screen_name">Screen Name</option>
-              <option value="followers_count">Followers Count</option>
-              <option value="following_count">Following Count</option>
-              <option value="location">Location</option>
-              <option value="verified">Verified</option>
+              {Object.keys(tableData[0]).map((column) => (
+                <option key={column} value={column}>
+                  {column}
+                </option>
+              ))}
             </select>
             <select
               value={filter.operator}
@@ -102,31 +138,27 @@ const DynamicTable = () => {
         <button onClick={applyFilters}>Apply Filters</button>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Screen Name</th>
-            <th>Followers Count</th>
-            <th>Following Count</th>
-            <th>Location</th>
-            <th>Verified</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          {tableData.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td>{row.name}</td>
-              <td>{row.screen_name}</td>
-              <td>{row.followers_count}</td>
-              <td>{row.following_count}</td>
-              <td>{row.location}</td>
-              <td>{row.verified.toString()}</td>
+      <div className='table-aligns'>
+        <Table>
+          <thead>
+            <tr>
+              {Object.keys(tableData[0]).map((column) => (
+                <th key={column}>{column}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+
+            {filteredTableData.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {Object.values(row).map((cell, cellIndex) => (
+                  <td key={cellIndex}>{cell.toString()}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
     </div>
   );
 };
